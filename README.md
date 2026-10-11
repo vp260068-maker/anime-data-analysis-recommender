@@ -1,84 +1,105 @@
-# Anime Recommendations Database – Exploratory Data Analysis
+# Anime Data Analysis & Recommendation System
 
-## Project Overview
+Exploratory data analysis and three recommendation models built on the
+[Anime Recommendations Database](https://www.kaggle.com/datasets/CooperUnion/anime-recommendations-database)
+(MyAnimeList data from Kaggle).
 
-This project performs Exploratory Data Analysis (EDA) on the Anime Recommendations Database from Kaggle using Python, Pandas, and Matplotlib.
+## What this project does
 
-The main objective is to analyze anime ratings, popularity, genres, episode counts, and user preferences through data visualization.
+1. Loads and cleans `anime.csv` and `rating.csv`.
+2. Saves the cleaned anime table to `anime_clean.csv`.
+3. Creates 12 visualizations in `images/`.
+4. Builds three recommenders: popularity, content-based and item-based collaborative filtering.
+5. Optionally evaluates collaborative filtering against a popularity baseline (hit rate).
 
 ## Dataset
 
-**Source:** [Anime Recommendations Database – Kaggle](https://www.kaggle.com/datasets/CooperUnion/anime-recommendations-database)
+Download the two files from Kaggle and place them in the project folder (or pass `--data-dir`).
+`rating.csv` is large, so it is not stored in this repository.
 
-The dataset contains two CSV files:
+**anime.csv**
 
-### 1. anime.csv
+| Column | Meaning |
+|---|---|
+| `anime_id` | Unique ID of each anime |
+| `name` | Name of the anime |
+| `genre` | Comma-separated genres |
+| `type` | TV, Movie, OVA, Special, ONA or Music |
+| `episodes` | Number of episodes (`Unknown` becomes missing) |
+| `rating` | Average rating out of 10 |
+| `members` | Number of community members |
 
-* `anime_id`: Unique ID of each anime.
-* `name`: Name of the anime.
-* `genre`: Genres associated with the anime.
-* `type`: Type of anime, such as TV, Movie, or OVA.
-* `episodes`: Number of episodes.
-* `rating`: Average rating out of 10.
-* `members`: Number of community members.
+**rating.csv**
 
-### 2. rating.csv
+| Column | Meaning |
+|---|---|
+| `user_id` | Unique user identifier |
+| `anime_id` | ID of the anime rated |
+| `rating` | User rating 1-10; `-1` means watched but not scored (removed during cleaning) |
 
-* `user_id`: Unique user identifier.
-* `anime_id`: ID of the anime rated.
-* `rating`: Rating assigned by a user. A value of -1 indicates that no numerical rating was assigned.
+## Cleaning steps
 
-## Objectives
+- HTML entities in names are decoded (for example `&#039;`).
+- `episodes` is converted to a number; `Unknown` becomes missing.
+- Missing `genre` is filled with an empty string and missing `type` with `Unknown`.
+- Missing `rating` values are kept as missing and excluded from rating statistics.
+- Rows with `rating = -1` in `rating.csv` are removed.
 
-1. Understand the dataset.
-2. Identify and handle missing and invalid values.
-3. Analyze anime ratings and popularity.
-4. Identify the most common anime genres.
-5. Compare different anime types.
-6. Explore episode-count distributions.
-7. Create eight visualizations using Matplotlib.
-8. Interpret the patterns observed in the data.
+## Visualizations (12)
 
-## Graphs Included
+All charts are produced by `anime_analysis.py` and saved to `images/`.
 
-1. **Top 10 Anime by Average Rating:** Horizontal bar chart.
-2. **Distribution of User Ratings:** Histogram.
-3. **Top 10 Most Popular Anime:** Horizontal bar chart.
-4. **Top 10 Most Common Anime Genres:** Horizontal bar chart.
-5. **Anime Type Distribution:** Pie chart.
-6. **Anime Popularity vs Average Rating:** Scatter plot.
-7. **Distribution of Anime Episodes:** Histogram.
-8. **Anime Ratings by Type:** Box plot.
+| # | File | Chart |
+|---|---|---|
+| 01 | `01_missing_values.png` | Missing values in anime.csv (bar) |
+| 02 | `02_type_distribution.png` | Number of anime by type (bar) |
+| 03 | `03_avg_rating_distribution.png` | Distribution of average anime rating (histogram) |
+| 04 | `04_user_rating_distribution.png` | Individual user ratings, 1-10 (bar) |
+| 05 | `05_top_genres.png` | Top 15 genres by number of anime (bar) |
+| 06 | `06_genre_avg_rating.png` | Highest-rated genres with at least 100 anime (bar) |
+| 07 | `07_rating_by_type.png` | Average rating by anime type (box plot) |
+| 08 | `08_members_vs_rating.png` | Popularity vs rating, with Spearman correlation (scatter) |
+| 09 | `09_episodes_distribution.png` | Episode count, up to 100 episodes (histogram) |
+| 10 | `10_top_popular.png` | Top 10 most popular anime by members (bar) |
+| 11 | `11_user_item_activity.png` | Ratings per user and per anime, long tail (histograms) |
+| 12 | `12_genre_correlation.png` | Genre co-occurrence correlation (heatmap) |
 
-## Technologies Used
+## Recommenders
 
-* Python
-* Pandas
-* Matplotlib
+- **Popularity:** IMDB-style weighted rating, `WR = v/(v+m)*R + m/(v+m)*C`, computed for anime in the top 20% by members.
+- **Content-based:** TF-IDF on genre and type, ranked by cosine similarity. Ties go to the more popular anime.
+- **Item-based collaborative filtering:** cosine similarity between items on mean-centred user ratings, using anime with at least 50 ratings.
 
-## Analysis and Expected Outcomes
+**Evaluation (`--evaluate`):** users are split 80/20. For each test user, one liked anime (rating of 8 or more) is hidden and the model must recover it in its top-10 list. Results are compared with a popularity baseline.
 
-The analysis explores the following questions:
+## How to run
 
-* Which anime have the highest average ratings?
-* Which anime have the largest number of members?
-* Which genres occur most frequently?
-* Which types of anime are most common?
-* How are user ratings distributed?
-* Is there a relationship between popularity and average rating?
-* How are episode counts distributed?
-* How do average ratings vary across anime types?
+```bash
+pip install -r requirements.txt
 
-The actual findings will be determined after running the analysis on the dataset.
+python anime_analysis.py                          # clean + plots + sample recommendations
+python anime_analysis.py --data-dir path/to/csvs  # where anime.csv and rating.csv live
+python anime_analysis.py --title "Death Note"     # recommendations for another title
+python anime_analysis.py --evaluate               # adds offline evaluation (takes several minutes)
+```
 
-## Conclusion
+The title passed to `--title` must match a name in `anime.csv` exactly. Collaborative filtering also needs the anime to have at least 50 ratings.
 
-This project demonstrates how Python, Pandas, and Matplotlib can be used to perform Exploratory Data Analysis on a real-world anime dataset. The visualizations help identify patterns in anime popularity, ratings, genres, formats, and episode counts.
+## Project files
 
-The analysis can also serve as a foundation for developing an anime recommendation system.
+| File | Purpose |
+|---|---|
+| `anime_analysis.py` | Cleaning, 12 plots, recommenders and evaluation |
+| `project.ipynb` | Notebook version of the project |
+| `anime_clean.csv` | Cleaned anime table with per-anime rating statistics |
+| `insights_report.md` | Findings, recommender results and conclusions |
+| `requirements.txt` | Python dependencies |
 
-## Dataset Credit
+## Technologies
+
+Python, pandas, NumPy, SciPy, scikit-learn, Matplotlib, seaborn.
+
+## Dataset credit
 
 CooperUnion, *Anime Recommendations Database*, Kaggle.
-
 https://www.kaggle.com/datasets/CooperUnion/anime-recommendations-database
